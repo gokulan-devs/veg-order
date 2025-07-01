@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chillout Spot - Daily Veggie Order</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+        }
+        h2 {
+            color: green;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #aaa;
+            padding: 6px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        input[type="text"], input[type="number"], input[type="date"] {
+            width: 95%;
+            padding: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .submit-btn, .print-btn, .add-btn, .image-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: green;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .submit-btn:hover, .print-btn:hover, .add-btn:hover, .image-btn:hover {
+            background-color: darkgreen;
+        }
+    </style>
+    <script>
+        function calculateTotal(row) {
+            const quantity = parseFloat(row.querySelector('.qty').value) || 0;
+            const rate = parseFloat(row.querySelector('.rate').value) || 0;
+            const total = (quantity * rate).toFixed(2);
+            row.querySelector('.total').value = total > 0 ? total : "";
+            calculateGrandTotal();
+        }
+
+        function calculateGrandTotal() {
+            const totalFields = document.querySelectorAll('.total');
+            let grandTotal = 0;
+            totalFields.forEach(field => {
+                grandTotal += parseFloat(field.value) || 0;
+            });
+            document.getElementById('grandTotal').value = grandTotal > 0 ? grandTotal.toFixed(2) : "";
+        }
+
+        function downloadPDF() {
+            const dateValue = document.getElementById('orderDate').value;
+            if (!dateValue) {
+                alert('Please select a date before downloading PDF.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            let tableData = [];
+            const rows = document.querySelectorAll('#orderTable tbody tr');
+            rows.forEach((row, index) => {
+                const item = row.cells[1].innerText || row.cells[1].querySelector('input').value;
+                const qty = row.cells[2].querySelector('input').value;
+                const rate = row.cells[3].querySelector('input').value;
+                const total = row.cells[4].querySelector('input').value;
+                if (qty || rate || total) {
+                    tableData.push([index + 1, item, qty, rate, total]);
+                }
+            });
+
+            const grandTotal = document.getElementById('grandTotal').value;
+
+            doc.text("Chillout Spot - Daily Veggie Order", 10, 10);
+            doc.text("Date: " + dateValue, 10, 20);
+
+            doc.autoTable({
+                head: [['S.No', 'Item Name', 'Quantity', 'Rate (₹)', 'Total (₹)']],
+                body: tableData,
+                startY: 30
+            });
+
+            doc.text("Total Amount (₹): " + grandTotal, 10, doc.lastAutoTable.finalY + 10);
+
+            doc.save(`chillout_spot_${dateValue}.pdf`);
+        }
+
+        function downloadImage() {
+            const dateValue = document.getElementById('orderDate').value;
+            if (!dateValue) {
+                alert('Please select a date before downloading Image.');
+                return;
+            }
+
+            html2canvas(document.body).then(function(canvas) {
+                const link = document.createElement('a');
+                link.download = `chillout_spot_${dateValue}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        function addNewItem() {
+            const table = document.getElementById('orderTable').getElementsByTagName('tbody')[0];
+            const rowCount = table.rows.length;
+            const row = table.insertRow(-1);
+
+            const cell1 = row.insertCell(0);
+            const cell2 = row.insertCell(1);
+            const cell3 = row.insertCell(2);
+            const cell4 = row.insertCell(3);
+            const cell5 = row.insertCell(4);
+
+            cell1.innerHTML = rowCount + 1;
+            cell2.innerHTML = `<input type='text' placeholder='New Item'>`;
+            cell3.innerHTML = `<input type='number' class='qty' min='0' step='0.01' oninput='calculateTotal(this.parentElement.parentElement)'>`;
+            cell4.innerHTML = `<input type='number' class='rate' min='0' step='0.01' oninput='calculateTotal(this.parentElement.parentElement)'>`;
+            cell5.innerHTML = `<input type='text' class='total' readonly>`;
+        }
+    </script>
+</head>
+<body>
+
+<h2>Chillout Spot - Daily Veggie Order</h2>
+
+<form>
+    <label for="orderDate">Date:</label>
+    <input type="date" id="orderDate" name="orderDate" required>
+
+    <table id="orderTable">
+        <thead>
+            <tr>
+                <th>S.No</th>
+                <th>Item Name</th>
+                <th>Quantity</th>
+                <th>Rate (₹)</th>
+                <th>Total (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <script>
+                const items = [
+                    "Onion", "Tomato", "Capsicum", "Green Chilli", "Small Onion", "Spring Onion", "Big Onion",
+                    "Coriander Leaves", "Mint Leaves", "Curry Leaves", "Potato", "Brinjal", "Coconut", "Beans",
+                    "Carrot", "Lemon", "Mushroom", "Cauliflower", "Cabbage", "Garlic - Malai Poondu",
+                    "Garlic - Gloves", "Baby Corn", "Drumstick", "Pumpkin", "Plantain Stem", "Bottle Gourd"
+                ];
+                items.forEach((item, index) => {
+                    document.write(`
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item}</td>
+                        <td><input type="number" class="qty" min="0" step="0.01" oninput="calculateTotal(this.parentElement.parentElement)"></td>
+                        <td><input type="number" class="rate" min="0" step="0.01" oninput="calculateTotal(this.parentElement.parentElement)"></td>
+                        <td><input type="text" class="total" readonly></td>
+                    </tr>
+                    `);
+                });
+            </script>
+        </tbody>
+    </table>
+
+    <label for="grandTotal"><b>Total Amount (₹):</b></label>
+    <input type="text" id="grandTotal" name="grandTotal" readonly>
+
+    <br><br>
+    <button type="button" class="add-btn" onclick="addNewItem()">Add New Item</button>
+    <button type="button" class="submit-btn">Submit Order</button>
+    <button type="button" class="print-btn" onclick="downloadPDF()">Download PDF</button>
+    <button type="button" class="image-btn" onclick="downloadImage()">Download Image</button>
+</form>
+
+</body>
+</html>
